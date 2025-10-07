@@ -1,38 +1,74 @@
 "use client";
 
-import { use, useState } from "react";
+import {  useEffect, useState } from "react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import { useRouter,useSearchParams } from "next/navigation";
 import { movieService } from "@/services/movies/movieService";
+import { movie } from "@/interfaces/Movies/Movie.inteface";
 
 const movieSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters long"),
   publishingYear: z
     .string()
     .regex(/^\d{4}$/, "Year must be a valid 4-digit number"),
-  poster: z.instanceof(File),
+ poster: z.union([z.instanceof(File), z.string()]),
 });
 
 type MovieFormData = z.infer<typeof movieSchema>;
 
 const CreateMovie = () => {
   const router = useRouter();
+    const searchParams = useSearchParams();
+  const id = searchParams.get('id') || ""; 
   const [preview, setPreview] = useState<string | null>(null);
   const [isLoading, setLoading] = useState<boolean>(false);
+const [movieData, setMovieData] = useState<movie | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-  } = useForm<MovieFormData>({
-    resolver: zodResolver(movieSchema),
-  });
+const {
+  register,
+  handleSubmit,
+  formState: { errors },
+  reset,   // get reset method from useForm
+  setValue,
+} = useForm<MovieFormData>({
+  resolver: zodResolver(movieSchema),
+  defaultValues: {
+    title: '',
+    publishingYear: '',
+    poster: '',
+  },
+});
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+useEffect(() => {
+  movieService.getById(id)
+    .then((res) => {
+      const movie = res?.data;
+      setMovieData({
+        title: movie?.title || '',
+        poster: movie?.poster || '',
+        publishingYear: movie?.publishingYear,
+      });
+    })
+    .catch((err) => console.error(err));
+}, [id]);
+
+useEffect(() => {
+  if (movieData) {
+    reset({
+      ...movieData,
+      publishingYear: movieData.publishingYear?.toString() ?? '',
+    });
+
+    setPreview(movieData?.poster)
+  }
+}, [movieData, reset]);
+
+
+
+   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setValue("poster", file); // set file in form state
@@ -41,18 +77,12 @@ const CreateMovie = () => {
     }
   };
 
-  const onSubmit = async (data: MovieFormData) => {
+   const onSubmit = async (data: MovieFormData) => {
     try {
       setLoading(true);
 
-      const formData = new FormData();
-      formData.append("title", data.title);
-      formData.append("publishingYear", data.publishingYear);
-      if (data.poster) {
-        formData.append("poster", data.poster);
-      }
-
-      const res = await movieService.create(formData);
+    
+       await movieService.update(id,data);
 
       router.push("/movies"); // redirect after login
     } catch (error: any) {
@@ -61,11 +91,12 @@ const CreateMovie = () => {
       setLoading(false);
     }
   };
+  
 
   return (
     <div className="bg-[#0D2B38] min-h-screen flex flex-col px-5 sm:px-10 md:px-16 py-10 text-white font-montserrat relative">
       <h1 className="text-3xl sm:text-4xl md:text-[48px] font-semibold mb-10">
-      Create a new movie
+        { "Edit movie" }
       </h1>
 
       <form

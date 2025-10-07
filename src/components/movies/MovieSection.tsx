@@ -1,70 +1,32 @@
 "use client";
 
-import Image from "next/image";
-import { useState } from "react";
+import { Dispatch, SetStateAction } from "react";
+import MovieCard from "./MovieCard";
+import {  movie, PaginatedMovies } from "@/interfaces/Movies/Movie.inteface";
+import { useRouter } from "next/navigation";
 
-const movies = [
-  {
-    title: "Interstellar",
-    year: "2014",
-    image: "https://image.tmdb.org/t/p/w500/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg",
-  },
-  {
-    title: "The Dark Knight",
-    year: "2008",
-    image: "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
-  },
-  {
-    title: "Avatar",
-    year: "2009",
-    image: "https://image.tmdb.org/t/p/w500/kyeqWdyUXW608qlYkRqosgbbJyK.jpg",
-  },
-  {
-    title: "Oppenheimer",
-    year: "2023",
-    image: "https://image.tmdb.org/t/p/w500/bkpPTZUdq31UGDovmszsg2CchiI.jpg",
-  },
-  {
-    title: "Dune: Part Two",
-    year: "2024",
-    image: "https://image.tmdb.org/t/p/w500/8bcoRX3hQRHufLPSDREdvr3YMXx.jpg",
-  },
-  {
-    title: "The Batman",
-    year: "2022",
-    image: "https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg",
-  },
-  {
-    title: "Spider-Man: Across the Spider-Verse",
-    year: "2023",
-    image: "https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg",
-  },
-  {
-    title: "Tenet",
-    year: "2020",
-    image: "https://image.tmdb.org/t/p/w500/k68nPLbIST6NP96JmTxmZijEvCA.jpg",
-  },
-  {
-    title: "Everything Everywhere All at Once",
-    year: "2022",
-    image: "https://image.tmdb.org/t/p/w500/w3LxiVYdWWRvEVdn5RYq6jIqkb1.jpg",
-  },
-];
 
-const MovieSection = () => {
-  const [page, setPage] = useState(1);
-  const moviesPerPage = 8;
 
-  const totalPages = Math.ceil(movies.length / moviesPerPage);
-  const startIndex = (page - 1) * moviesPerPage;
-  const currentMovies = movies.slice(startIndex, startIndex + moviesPerPage);
+const MovieSection = ({movies,page,setPage,pagination,handleLogout}:{movies:movie[],page:number,setPage:Dispatch<SetStateAction<number>>,pagination:PaginatedMovies,handleLogout:()=>void}) => {
+   const router = useRouter()
+
+  
+
+
+
+const totalPages = pagination.total > 8 ? Math.ceil(pagination.total / pagination.pageSize) : 1;
+
+const currentMovies = movies ?? [];
+
+
+
 
   return (
     <div className="bg-[#093545] text-white px-4 sm:px-10 md:px-20 py-10 md:pb-40 font-montserrat min-h-screen">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <h1 className="font-semibold flex gap-2">
           <span className="text-[48px] sm:text-3xl">My movies</span>
-          <span className="">
+          <span className="cursor-pointer" onClick={()=>router.push('/create-movie')} >
             <svg
               width="32"
               height="32"
@@ -86,7 +48,7 @@ const MovieSection = () => {
             </svg>
           </span>
         </h1>
-        <button className="flex items-center gap-2 text-sm hover:text-teal-400 transition">
+        <button className="flex items-center gap-2 text-sm hover:text-teal-400 transition" onClick={handleLogout}>
           <span>Logout</span>
           <svg
             width="24"
@@ -103,31 +65,17 @@ const MovieSection = () => {
         </button>
       </div>
 
+
+      
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 mt-20">
-        {currentMovies.map((movie, index) => (
-          <div
-            key={index}
-            className="bg-[#092c39] hover:bg-[#1e414e] rounded-xl cursor-pointer overflow-hidden shadow-md hover:shadow-lg transition p-2"
-          >
-            <div className="relative w-full h-56 sm:h-72 md:h-80 lg:h-96">
-              <Image
-                src={movie.image}
-                alt={movie.title}
-                fill
-                className="object-cover rounded-xl"
-                sizes="(max-width: 640px) 100vw, 
-                       (max-width: 1024px) 50vw, 
-                       25vw"
-              />
-            </div>
-            <div className="text-white my-3 px-1">
-              <h2 className="font-medium truncate text-base sm:text-lg my-1">
-                {movie.title}
-              </h2>
-              <p className="text-sm text-gray-300">{movie.year}</p>
-            </div>
+        { currentMovies?.map((movie,ind) => (
+          <div key={`${movie.title}-${ind}`}>
+          <MovieCard movie={movie} />
           </div>
-        ))}
+          
+        )) 
+        
+        }
       </div>
 
       {/* Pagination */}
