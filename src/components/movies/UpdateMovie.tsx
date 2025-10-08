@@ -1,11 +1,11 @@
 "use client";
 
-import {  useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter,useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { movieService } from "@/services/movies/movieService";
 import { movie } from "@/interfaces/Movies/Movie.inteface";
 
@@ -14,61 +14,70 @@ const movieSchema = z.object({
   publishingYear: z
     .string()
     .regex(/^\d{4}$/, "Year must be a valid 4-digit number"),
- poster: z.union([z.instanceof(File), z.string()]),
+  poster: z.union([z.instanceof(File), z.string()]),
 });
 
 type MovieFormData = z.infer<typeof movieSchema>;
 
 const UpdateMovie = () => {
   const router = useRouter();
-    const searchParams = useSearchParams();
-  const id = searchParams.get('id') || ""; 
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id") || "";
   const [preview, setPreview] = useState<string | null>(null);
   const [isLoading, setLoading] = useState<boolean>(false);
-const [movieData, setMovieData] = useState<movie | null>(null);
+  const [movieData, setMovieData] = useState<movie | null>(null);
 
-const {
-  register,
-  handleSubmit,
-  formState: { errors },
-  reset,   // get reset method from useForm
-  setValue,
-} = useForm<MovieFormData>({
-  resolver: zodResolver(movieSchema),
-  defaultValues: {
-    title: '',
-    publishingYear: '',
-    poster: '',
-  },
-});
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset, // get reset method from useForm
+    setValue,
+  } = useForm<MovieFormData>({
+    resolver: zodResolver(movieSchema),
+    defaultValues: {
+      title: "",
+      publishingYear: "",
+      poster: "",
+    },
+  });
 
-useEffect(() => {
-  movieService.getById(id)
-    .then((res) => {
-      const movie = res?.data;
-      setMovieData({
-        title: movie?.title || '',
-        poster: movie?.poster || '',
-        publishingYear: movie?.publishingYear,
+  useEffect(() => {
+    movieService
+      .getById(id)
+      .then((res) => {
+        const movie = res?.data;
+        setMovieData({
+          title: movie?.title || "",
+          poster: movie?.poster || "",
+          publishingYear: movie?.publishingYear,
+        });
+      })
+      .catch((err) => console.error(err));
+  }, [id]);
+
+  useEffect(() => {
+    if (movieData) {
+      reset({
+        ...movieData,
+        publishingYear: movieData.publishingYear?.toString() ?? "",
       });
-    })
-    .catch((err) => console.error(err));
-}, [id]);
 
-useEffect(() => {
-  if (movieData) {
-    reset({
-      ...movieData,
-      publishingYear: movieData.publishingYear?.toString() ?? '',
-    });
+      setPreview(movieData?.poster);
+    }
+  }, [movieData, reset]);
 
-    setPreview(movieData?.poster)
-  }
-}, [movieData, reset]);
+  const handleDelete = async () => {
+    try {
+      await movieService.delete(id);
 
+      router.push("/movies"); // redirect after login
+    } catch (error: any) {
+      console.error("Login failed:", error);
+    }
+  };
 
-
-   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setValue("poster", file); // set file in form state
@@ -77,12 +86,11 @@ useEffect(() => {
     }
   };
 
-   const onSubmit = async (data: MovieFormData) => {
+  const onSubmit = async (data: MovieFormData) => {
     try {
       setLoading(true);
 
-    
-       await movieService.update(id,data);
+      await movieService.update(id, data);
 
       router.push("/movies"); // redirect after login
     } catch (error: any) {
@@ -91,12 +99,11 @@ useEffect(() => {
       setLoading(false);
     }
   };
-  
 
   return (
     <div className="bg-[#0D2B38] min-h-screen flex flex-col px-5 sm:px-10 md:px-16 py-10 text-white font-montserrat relative">
       <h1 className="text-3xl sm:text-4xl md:text-[48px] font-semibold mb-10">
-        { "Edit movie" }
+        {"Edit movie"}
       </h1>
 
       <form
@@ -159,31 +166,41 @@ useEffect(() => {
             )}
           </div>
 
-          <div className="flex flex-col gap-1">
-            <input
-              type="text"
-              placeholder="Publishing year"
-              {...register("publishingYear")}
-              className="bg-[#143D4C] text-white rounded-md px-4 py-3 outline-none focus:ring-2 focus:ring-teal-400 placeholder-gray-400 w-full sm:w-[250px] md:w-[200px] transition"
-            />
-            {errors.publishingYear && (
-              <p className="text-red-400 text-sm">
-                {errors.publishingYear.message}
-              </p>
-            )}
+          <div className="flex gap-1 align-middle gap-3">
+            <div>
+              <input
+                type="text"
+                placeholder="Publishing year"
+                {...register("publishingYear")}
+                className="bg-[#143D4C] text-white rounded-md px-4 py-3 outline-none focus:ring-2 focus:ring-teal-400 placeholder-gray-400 w-full sm:w-[250px] md:w-[200px] transition"
+              />
+              {errors.publishingYear && (
+                <p className="text-red-400 text-sm">
+                  {errors.publishingYear.message}
+                </p>
+              )}
+            </div>
+
+            <button
+              onClick={handleDelete}
+              type="submit"
+              className="bg-[#d1392b] px-6 py-2 rounded-md  text-white font-semibold transition w-full sm:w-[140px]"
+            >
+              Delete
+            </button>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 mt-4 w-full sm:w-auto">
             <button
               type="button"
-              className="border border-white px-6 py-2 rounded-md font-medium hover:bg-[#143D4C] transition w-full sm:w-[140px]"
-              onClick={()=>router.push("/movies")}
+              className="border border-white px-6 py-2 text-white rounded-md font-medium hover:bg-[#143D4C] transition w-full sm:w-[140px]"
+              onClick={() => router.push("/movies")}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="bg-[#2BD17E] px-6 py-2 rounded-md text-black font-semibold hover:bg-green-500 transition w-full sm:w-[140px]"
+              className="bg-[#2BD17E] px-6 py-2 rounded-md text-white font-semibold hover:bg-green-500 transition w-full sm:w-[140px]"
               disabled={isLoading}
             >
               {isLoading ? (
